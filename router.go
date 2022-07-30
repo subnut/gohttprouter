@@ -8,20 +8,35 @@ type Router struct {
 	config config
 }
 
-type config struct {
-	/*
-	   Preserve is false by default
-	   Redirect is true by default
+/*
+	Preserve is false by default
+	Redirect is true by default
 
-	   Example for TrailingSlash -
-	   +----------+----------+------+----------------------------+
-	   | Preserve | Redirect | URL  | Action                     |
-	   +----------+----------+------+----------------------------+
-	   | false    | false    | /hi/ | Call the handler for /hi   |
-	   | false    | true     | /hi/ | Redirect to /hi            |
-	   | true     | *        | /hi/ | 404 if no handler for /hi/ |
-	   +----------+----------+------+----------------------------+
-	*/
+	Examples
+	========
+	- PreserveTrailingSlash: true
+		/hi/ => call handler for /hi/, 404 if no handler
+		/hi  => call handler for /hi,  404 if no handler
+
+	- PreserveTrailingSlash: false
+	  RedirectTrailingSlash: false
+		/hi/ => call handler for /hi/,
+		        else, call handler for /hi (if defined)
+		        else, 404
+		/hi =>  call handler for /hi,
+		        else, call handler for /hi/ (if defined)
+		        else, 404
+
+	- PreserveTrailingSlash: false
+	  RedirectTrailingSlash: true
+		/hi/ => call handler for /hi/,
+		        else, REDIRECT to /hi (if /hi handler is defined)
+		        else, 404
+		/hi =>  call handler for /hi,
+		        else, REDIRECT to /hi/ (if /hi/ handler is defined)
+		        else, 404
+*/
+type config struct {
 	PreserveEmptySegments bool
 	RedirectEmptySegments bool
 	PreserveTrailingSlash bool
