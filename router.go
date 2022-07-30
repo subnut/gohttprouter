@@ -1,6 +1,7 @@
 package gohttprouter
 
 import (
+	"bytes"
 	"net/http"
 )
 
@@ -8,48 +9,53 @@ type Router struct {
 	config config
 }
 
-/*
-	Preserve is false by default
-	Redirect is true by default
-
-	Examples
-	========
-	- PreserveTrailingSlash: true
-		/hi/ => call handler for /hi/, 404 if no handler
-		/hi  => call handler for /hi,  404 if no handler
-
-	- PreserveTrailingSlash: false
-	  RedirectTrailingSlash: false
-		/hi/ => call handler for /hi/,
-		        else, call handler for /hi (if defined)
-		        else, 404
-		/hi =>  call handler for /hi,
-		        else, call handler for /hi/ (if defined)
-		        else, 404
-
-	- PreserveTrailingSlash: false
-	  RedirectTrailingSlash: true
-		/hi/ => call handler for /hi/,
-		        else, REDIRECT to /hi (if /hi handler is defined)
-		        else, 404
-		/hi =>  call handler for /hi,
-		        else, REDIRECT to /hi/ (if /hi/ handler is defined)
-		        else, 404
-*/
 type config struct {
-	PreserveEmptySegments bool
-	RedirectEmptySegments bool
-	PreserveTrailingSlash bool
-	RedirectTrailingSlash bool
+	EmptySegmentsAreImportant   bool
+	TrailingSlashesAreImportant bool
 }
 
 func New() *Router {
-	return &Router{
-		config: config{
-			RedirectTrailingSlash: true,
-			RedirectEmptySegments: true,
-		},
+	// Useful for setting default values that aren't the "nil" values
+	return &Router{}
+}
+
+func (router *Router) getRequestPath(request *http.Request) string {
+	url := []byte(request.RequestURI)
+	// Trim #fragment and ?query
+	for _, char := range []byte{'#', '?'} {
+		if index := bytes.IndexByte(url, char); index != -1 {
+			url = url[:index]
+		}
 	}
+	// Ensure all percent-encodings have uppercase hexadecimal characters
+	for i := bytes.IndexByte(url[:], '%'); i != -1; i = bytes.IndexByte(url[i:], '%') {
+		if i++; url[i] >= 'a' {
+			url[i] -= 'a' - 'A'
+		}
+		if i++; url[i] >= 'a' {
+			url[i] -= 'a' - 'A'
+		}
+	}
+	// Truncate empty segments
+	if !router.config.EmptySegmentsAreImportant {
+		var segments [][]byte
+		// Leading forward slash (if any)
+		if url[0] == '/' {
+			segments = append(segments, []byte{})
+		}
+		// All non-empty segments
+		for _, segment := range bytes.Split(url, []byte{'/'}) {
+			if len(segment) != 0 {
+				segments = append(segments, segment)
+			}
+		}
+		// Trailing forward slash (if any)
+		if url[len(url)-1] == '/' {
+			segments = append(segments, []byte{})
+		}
+		url = bytes.Join(segments, []byte{'/'})
+	}
+	return string(url)
 }
 
 func (*Router) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
