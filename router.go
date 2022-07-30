@@ -2,8 +2,6 @@ package gohttprouter
 
 import (
 	"net/http"
-
-	"github.com/subnut/gohttprouter/utils"
 )
 
 type Router struct {

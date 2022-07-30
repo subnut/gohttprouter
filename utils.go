@@ -1,11 +1,11 @@
-package utils
+package gohttprouter
 
 import (
 	"fmt"
 	str "strings"
 )
 
-func URItoURL(uri string) (string, error) {
+func normalizeURL(uri string) (string, error) {
 	url := []byte(uri)
 	// Trim #fragment and ?query
 	for _, char := range []byte{'#', '?'} {
