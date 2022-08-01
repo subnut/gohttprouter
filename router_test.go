@@ -29,3 +29,21 @@ func TestRouter_getRequestPath(t *testing.T) {
 		}
 	}
 }
+func TestRouter_getRequestPath_EmptySegmentsAreImportant(t *testing.T) {
+	router := New()
+	router.config.EmptySegmentsAreImportant = true
+	urls := []string{
+		"/",
+		"//",
+		"///",
+		"////",
+		"/hi///there",
+		"/hi///there/",
+		"/hi///there////",
+	}
+	for _, url := range urls {
+		if out := router.getRequestPath(&http.Request{RequestURI: url}); out != url {
+			t.Errorf("getRequestPath(%v)\nwant: %v\n got: %v\n", url, url, out)
+		}
+	}
+}
