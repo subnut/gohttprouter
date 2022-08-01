@@ -19,6 +19,8 @@ func New() *Router {
 	return &Router{}
 }
 
+// NOTE: RFC 2616 §5.1.2 "Request-URI is a Uniform Resource Identifier"
+// That means, unless a new RFC supersedes it, RequestURI is not an IRI (Internationalized Resource Identifier)
 func (router *Router) getRequestPath(request *http.Request) string {
 	url := []byte(request.RequestURI)
 	// Trim #fragment and ?query
