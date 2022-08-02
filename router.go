@@ -1,6 +1,9 @@
 package gohttprouter
 
-import "net/http"
+import (
+	"fmt"
+	"net/http"
+)
 
 // For compatibility with http.ServeMux
 func (r *router) Handle(p string, h http.Handler) { r.routeAdd("", p, h) }
@@ -33,7 +36,9 @@ func (r *router) Route(method string, path string, handler any) {
 	case func(http.ResponseWriter, *http.Request):
 		handler = http.HandlerFunc(handler.(func(http.ResponseWriter, *http.Request)))
 	default:
-		panic("handler is of incompatible type")
+		panic(fmt.Sprintf("handler is of incompatible type %T\n"+
+			"handler should be of type func(http.ResponseWriter, *http.Request) or http.Handler",
+			handler))
 	}
 	r.routeAdd(method, path, handler.(http.Handler)) // <-- Type assertion!
 }
