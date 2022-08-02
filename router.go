@@ -1,41 +1,40 @@
 package gohttprouter
 
-import (
-	"net/http"
-)
+import "net/http"
 
-// Convenience functions
-//
-// 	RFC 9110 § 9	 GET, HEAD, POST, PUT, DELETE, OPTIONS
-// 	RFC 5789	 PATCH
-//
-// See:
-// 	https://www.iana.org/assignments/http-methods/http-methods.xhtml
-// 	https://datatracker.ietf.org/doc/html/rfc9110
-// 	https://datatracker.ietf.org/doc/html/rfc5789
-func (r *Router) GET(p string, h http.HandlerFunc)     { r.Route("GET", p, h) }
-func (r *Router) HEAD(p string, h http.HandlerFunc)    { r.Route("HEAD", p, h) }
-func (r *Router) POST(p string, h http.HandlerFunc)    { r.Route("POST", p, h) }
-func (r *Router) PUT(p string, h http.HandlerFunc)     { r.Route("PUT", p, h) }
-func (r *Router) DELETE(p string, h http.HandlerFunc)  { r.Route("DELETE", p, h) }
-func (r *Router) OPTIONS(p string, h http.HandlerFunc) { r.Route("OPTIONS", p, h) }
-func (r *Router) PATCH(p string, h http.HandlerFunc)   { r.Route("PATCH", p, h) }
+// For compatiblity with http.ServeMux
+func (r *Router) Handle(p string, h http.Handler) { r.Route("", p, h) }
+func (r *Router) HandleFunc(p string, f func(http.ResponseWriter, *http.Request)) {
+	r.Route("", p, http.HandlerFunc(f))
+}
 
 type Router struct {
 	config struct {
 		EmptySegmentsAreImportant   bool
 		TrailingSlashesAreImportant bool
 	}
-	middlewares []func(http.HandlerFunc) http.HandlerFunc
+	middlewares []func(http.ResponseWriter, *http.Request) func(http.ResponseWriter, *http.Request)
+	routes      map[string]map[string]http.Handler
 }
 
-func New() *Router {
-	// Useful for setting default values that aren't the "nil" values
-	return &Router{}
+func (router *Router) Route(method string, path string, handler http.Handler) {
+	if handler == nil {
+		panic("nil handler")
+	}
+	router.routes[path] = make(map[string]http.Handler)
+	router.routes[path][method] = handler
 }
 
-func (*Router) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
-}
-
-func (*Router) Route(method string, path string, handler http.HandlerFunc) {
+func (router *Router) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
+	a, ok := router.routes[router.getPath(request)]
+	if ok != true {
+		http.NotFound(writer, request)
+		return
+	}
+	if _,exists := a[""]; exists == true {
+		// Catch-all.
+		a[""].ServeHTTP(writer, request)
+	} else {
+		a[request.Method].ServeHTTP(writer, request)
+	}
 }
