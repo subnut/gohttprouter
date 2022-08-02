@@ -1,17 +1,32 @@
 package gohttprouter
 
 import (
-	"bytes"
 	"net/http"
 )
 
-type Router struct {
-	config config
-}
+// Convenience functions
+//
+// 	RFC 9110 § 9	 GET, HEAD, POST, PUT, DELETE, OPTIONS
+// 	RFC 5789	 PATCH
+//
+// See:
+// 	https://www.iana.org/assignments/http-methods/http-methods.xhtml
+// 	https://datatracker.ietf.org/doc/html/rfc9110
+// 	https://datatracker.ietf.org/doc/html/rfc5789
+func (r *Router) GET(p string, h http.Handler)     { r.Route("GET", p, h) }
+func (r *Router) HEAD(p string, h http.Handler)    { r.Route("HEAD", p, h) }
+func (r *Router) POST(p string, h http.Handler)    { r.Route("POST", p, h) }
+func (r *Router) PUT(p string, h http.Handler)     { r.Route("PUT", p, h) }
+func (r *Router) DELETE(p string, h http.Handler)  { r.Route("DELETE", p, h) }
+func (r *Router) OPTIONS(p string, h http.Handler) { r.Route("OPTIONS", p, h) }
+func (r *Router) PATCH(p string, h http.Handler)   { r.Route("PATCH", p, h) }
 
-type config struct {
-	EmptySegmentsAreImportant   bool
-	TrailingSlashesAreImportant bool
+type Router struct {
+	config struct {
+		EmptySegmentsAreImportant   bool
+		TrailingSlashesAreImportant bool
+	}
+	middlewares []func(http.HandlerFunc) http.HandlerFunc
 }
 
 func New() *Router {
@@ -19,46 +34,9 @@ func New() *Router {
 	return &Router{}
 }
 
-// NOTE: RFC 2616 §5.1.2 "Request-URI is a Uniform Resource Identifier"
-// That means, unless a new RFC supersedes it, RequestURI is not an IRI (Internationalized Resource Identifier)
-func (router *Router) getRequestPath(request *http.Request) string {
-	url := []byte(request.RequestURI)
-	// Trim #fragment and ?query
-	for _, char := range []byte{'#', '?'} {
-		if index := bytes.IndexByte(url, char); index != -1 {
-			url = url[:index]
-		}
-	}
-	// Ensure all percent-encodings have uppercase hexadecimal characters
-	for i := bytes.IndexByte(url[:], '%'); i != -1; i = bytes.IndexByte(url[i:], '%') {
-		if i++; url[i] >= 'a' {
-			url[i] -= 'a' - 'A'
-		}
-		if i++; url[i] >= 'a' {
-			url[i] -= 'a' - 'A'
-		}
-	}
-	// Truncate empty segments
-	if !router.config.EmptySegmentsAreImportant {
-		var segments [][]byte
-		// Leading forward slash (if any)
-		if url[0] == '/' {
-			segments = append(segments, []byte{})
-		}
-		// All non-empty segments
-		for _, segment := range bytes.Split(url, []byte{'/'}) {
-			if len(segment) != 0 {
-				segments = append(segments, segment)
-			}
-		}
-		// Trailing forward slash (if any)
-		if url[len(url)-1] == '/' {
-			segments = append(segments, []byte{})
-		}
-		url = bytes.Join(segments, []byte{'/'})
-	}
-	return string(url)
-}
-
 func (*Router) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 }
+
+func (*Router) Route(method string, path string, handler http.Handler) {
+}
+
