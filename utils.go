@@ -28,7 +28,7 @@ func toUpper(c byte) byte {
 }
 
 // Returns the normalized version of http.Request.RequestURI
-func (router *Router) getPath(request *http.Request) string {
+func (r *router) getPath(request *http.Request) string {
 	// NOTE: RFC 2616 § 5.1.2 "Request-URI is a Uniform Resource Identifier"
 	// That means, unless a new RFC supersedes it, RequestURI is not an IRI.
 	url := []byte(request.RequestURI)
@@ -39,7 +39,7 @@ func (router *Router) getPath(request *http.Request) string {
 		}
 	}
 	// Truncate empty segments
-	if !router.config.EmptySegmentsAreImportant {
+	if !r.config.EmptySegmentsAreImportant {
 		var segments [][]byte
 		// Leading forward slash (if any)
 		if url[0] == '/' {

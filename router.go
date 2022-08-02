@@ -2,13 +2,20 @@ package gohttprouter
 
 import "net/http"
 
-// For compatiblity with http.ServeMux
-func (r *Router) Handle(p string, h http.Handler) { r.Route("", p, h) }
-func (r *Router) HandleFunc(p string, f func(http.ResponseWriter, *http.Request)) {
-	r.Route("", p, http.HandlerFunc(f))
+// For compatibility with http.ServeMux
+func (r *router) Handle(p string, h http.Handler) { r.routeAdd("", p, h) }
+func (r *router) HandleFunc(p string, f func(http.ResponseWriter, *http.Request)) {
+	r.routeAdd("", p, http.HandlerFunc(f))
+}
+func (r *router) Handler(req *http.Request) (handler http.Handler, pattern string) {
+	// TODO: Think about it.
+	return nil, ""
+}
+func (r *router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	r.serve(w, req)
 }
 
-type Router struct {
+type router struct {
 	config struct {
 		EmptySegmentsAreImportant   bool
 		TrailingSlashesAreImportant bool
@@ -17,21 +24,21 @@ type Router struct {
 	routes      map[string]map[string]http.Handler
 }
 
-func (router *Router) Route(method string, path string, handler http.Handler) {
+func (r *router) routeAdd(method string, path string, handler http.Handler) {
 	if handler == nil {
 		panic("nil handler")
 	}
-	router.routes[path] = make(map[string]http.Handler)
-	router.routes[path][method] = handler
+	r.routes[path] = make(map[string]http.Handler)
+	r.routes[path][method] = handler
 }
 
-func (router *Router) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
-	a, ok := router.routes[router.getPath(request)]
+func (r *router) serve(writer http.ResponseWriter, request *http.Request) {
+	a, ok := r.routes[r.getPath(request)]
 	if ok != true {
 		http.NotFound(writer, request)
 		return
 	}
-	if _,exists := a[""]; exists == true {
+	if _, exists := a[""]; exists == true {
 		// Catch-all.
 		a[""].ServeHTTP(writer, request)
 	} else {
