@@ -18,7 +18,17 @@ func (r *router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	r.serve(w, req)
 }
 
+// Helpful for finding the original router when routers are chained
+func (r *router) Router() *router {
+	ret := r
+	for ret.parent != nil {
+		ret = ret.parent
+	}
+	return ret
+}
+
 type router struct {
+	parent *router // Helpful for un-chaining routers
 	config struct {
 		EmptySegmentsAreImportant   bool
 		TrailingSlashesAreImportant bool
