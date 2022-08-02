@@ -24,6 +24,19 @@ type router struct {
 	routes      map[string]map[string]http.Handler
 }
 
+func (r *router) Route(method string, path string, handler any) {
+	if handler == nil {
+		panic("nil handler")
+	}
+	switch handler.(type) {
+	case http.Handler:
+	case func(http.ResponseWriter, *http.Request):
+		handler = http.HandlerFunc(handler.(func(http.ResponseWriter, *http.Request)))
+	default:
+		panic("handler is of incompatible type")
+	}
+	r.routeAdd(method, path, handler.(http.Handler)) // <-- Type assertion!
+}
 func (r *router) routeAdd(method string, path string, handler http.Handler) {
 	if handler == nil {
 		panic("nil handler")
