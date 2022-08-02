@@ -13,13 +13,13 @@ import (
 // 	https://www.iana.org/assignments/http-methods/http-methods.xhtml
 // 	https://datatracker.ietf.org/doc/html/rfc9110
 // 	https://datatracker.ietf.org/doc/html/rfc5789
-func (r *Router) GET(p string, h http.Handler)     { r.Route("GET", p, h) }
-func (r *Router) HEAD(p string, h http.Handler)    { r.Route("HEAD", p, h) }
-func (r *Router) POST(p string, h http.Handler)    { r.Route("POST", p, h) }
-func (r *Router) PUT(p string, h http.Handler)     { r.Route("PUT", p, h) }
-func (r *Router) DELETE(p string, h http.Handler)  { r.Route("DELETE", p, h) }
-func (r *Router) OPTIONS(p string, h http.Handler) { r.Route("OPTIONS", p, h) }
-func (r *Router) PATCH(p string, h http.Handler)   { r.Route("PATCH", p, h) }
+func (r *Router) GET(p string, h http.HandlerFunc)     { r.Route("GET", p, h) }
+func (r *Router) HEAD(p string, h http.HandlerFunc)    { r.Route("HEAD", p, h) }
+func (r *Router) POST(p string, h http.HandlerFunc)    { r.Route("POST", p, h) }
+func (r *Router) PUT(p string, h http.HandlerFunc)     { r.Route("PUT", p, h) }
+func (r *Router) DELETE(p string, h http.HandlerFunc)  { r.Route("DELETE", p, h) }
+func (r *Router) OPTIONS(p string, h http.HandlerFunc) { r.Route("OPTIONS", p, h) }
+func (r *Router) PATCH(p string, h http.HandlerFunc)   { r.Route("PATCH", p, h) }
 
 type Router struct {
 	config struct {
@@ -37,6 +37,5 @@ func New() *Router {
 func (*Router) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 }
 
-func (*Router) Route(method string, path string, handler http.Handler) {
+func (*Router) Route(method string, path string, handler http.HandlerFunc) {
 }
-
