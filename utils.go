@@ -28,6 +28,7 @@ func toUpper(c byte) byte {
 }
 
 // Returns the normalized version of http.Request.RequestURI
+// Implemented as a method so that *router.config can be accessed easily.
 func (r *router) getPath(request *http.Request) string {
 	// NOTE: RFC 2616 § 5.1.2 "Request-URI is a Uniform Resource Identifier"
 	// That means, unless a new RFC supersedes it, RequestURI is not an IRI.
