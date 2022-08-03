@@ -7,7 +7,7 @@ import (
 
 // For compatibility with http.ServeMux
 func (r *router) Handle(p string, h http.Handler) { r.routeAdd("", p, h) }
-func (r *router) HandleFunc(p string, f func(http.ResponseWriter, *http.Request)) {
+func (r *router) HandleFunc(p string, f handlerFunc) {
 	r.routeAdd("", p, http.HandlerFunc(f))
 }
 func (r *router) Handler(req *http.Request) (handler http.Handler, pattern string) {
@@ -18,23 +18,24 @@ func (r *router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	r.serve(w, req)
 }
 
-// Helpful for finding the original router when routers are chained
-func (r *router) Router() *router {
-	ret := r
-	for ret.parent != nil {
-		ret = ret.parent
-	}
-	return ret
-}
-
 type router struct {
-	parent *router // Helpful for un-chaining routers
+	F *funcHandler
+	M *methodHandler
 	config struct {
 		EmptySegmentsAreImportant   bool
 		TrailingSlashesAreImportant bool
 	}
-	middlewares []func(http.ResponseWriter, *http.Request) func(http.ResponseWriter, *http.Request)
+	middlewares []func(handlerFunc) handlerFunc
 	routes      map[string]map[string]http.Handler
+}
+
+func New() *router {
+	// Useful for setting default values that aren't the "nil" values
+	r := new(router)
+	r.F = &funcHandler{r}
+	r.M = &methodHandler{r}
+	r.routes = make(map[string]map[string]http.Handler)
+	return r
 }
 
 func (r *router) Route(method string, path string, handler any) {
@@ -43,8 +44,8 @@ func (r *router) Route(method string, path string, handler any) {
 	}
 	switch handler.(type) {
 	case http.Handler:
-	case func(http.ResponseWriter, *http.Request):
-		handler = http.HandlerFunc(handler.(func(http.ResponseWriter, *http.Request)))
+	case handlerFunc:
+		handler = http.HandlerFunc(handler.(handlerFunc))
 	default:
 		panic(fmt.Sprintf("handler is of incompatible type %T\n"+
 			"handler should be of type func(http.ResponseWriter, *http.Request) or http.Handler",
@@ -61,6 +62,7 @@ func (r *router) routeAdd(method string, path string, handler http.Handler) {
 }
 
 func (r *router) serve(writer http.ResponseWriter, request *http.Request) {
+	var fun handlerFunc
 	a, ok := r.routes[r.getPath(request)]
 	if ok != true {
 		http.NotFound(writer, request)
@@ -68,8 +70,13 @@ func (r *router) serve(writer http.ResponseWriter, request *http.Request) {
 	}
 	if _, exists := a[""]; exists == true {
 		// Catch-all.
-		a[""].ServeHTTP(writer, request)
+		fun = a[""].ServeHTTP
 	} else {
-		a[request.Method].ServeHTTP(writer, request)
+		fun = a[request.Method].ServeHTTP
 	}
+	// Use middlewares
+	for _, mitm := range r.middlewares {
+		fun = mitm(fun)
+	}
+	fun(writer, request)
 }

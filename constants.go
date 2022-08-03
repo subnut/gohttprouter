@@ -1,5 +1,7 @@
 package gohttprouter
 
+import "net/http"
+
 // RFC 3986
 // 	pchar       =  unreserved / pct-encoded / sub-delims / ":" / "@"
 // 	unreserved  =  ALPHA / DIGIT / "-" / "." / "_" / "~"
@@ -10,3 +12,4 @@ const rfc3986_subdelims = "!" + "$" + "&" + "'" + "(" + ")" + "*" + "+" + "," + 
 const rfc3986_unreserved = rfc3986_ALPHA + rfc3986_DIGIT + "-" + "." + "_" + "~"
 const rfc3986_pchar = rfc3986_unreserved + rfc3986_subdelims + ":" + "@"
 
+type handlerFunc = func(http.ResponseWriter, *http.Request)
