@@ -3,7 +3,7 @@ package gohttprouter
 import "net/http"
 
 type routers struct {
-	r *router
+	router *router
 }
 
 func New() *routers {

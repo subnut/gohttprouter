@@ -2,19 +2,19 @@ package gohttprouter
 
 import "net/http"
 
-type bothRouter struct {
+type dualRouter struct {
 	router
 	basicRouter
 	F *funcHandler
 	I *interfaceHandler
 }
 
-func (r *routers) BothRouter() *bothRouter {
-	return &bothRouter{
-		*r.r,
-		basicRouter{*r.r},
-		&funcHandler{r.r},
-		&interfaceHandler{r.r},
+func (r *routers) DualRouter() *dualRouter {
+	return &dualRouter{
+		*r.router,
+		basicRouter{*r.router},
+		&funcHandler{r.router},
+		&interfaceHandler{r.router},
 	}
 }
 

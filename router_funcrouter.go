@@ -8,7 +8,7 @@ type funcRouter struct {
 }
 
 func (r *routers) FuncRouter() *funcRouter {
-	return &funcRouter{*r.r, basicRouter{*r.r}}
+	return &funcRouter{*r.router, basicRouter{*r.router}}
 }
 
 func (r *funcRouter) Add(m string, p string, f handlerFunc) {

@@ -7,7 +7,7 @@ type basicRouter struct {
 }
 
 func (r *routers) BasicRouter() *basicRouter {
-	return &basicRouter{*r.r}
+	return &basicRouter{*r.router}
 }
 
 func (r *basicRouter) Handle(p string, h http.Handler) {
