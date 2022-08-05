@@ -14,7 +14,7 @@ func (r *routers) AnyRouter() *anyRouter {
 	return &anyRouter{*r.r, basicRouter{*r.r}}
 }
 
-func (r *bothRouter) Add(method string, path string, handler any) {
+func (r *anyRouter) Add(method string, path string, handler any) {
 	if handler == nil {
 		panic("nil handler")
 	}
@@ -29,10 +29,10 @@ func (r *bothRouter) Add(method string, path string, handler any) {
 	}
 	r.routeAdd(method, path, handler.(http.Handler)) // <-- Type assertion!
 }
-func (r *bothRouter) GET(p string, f any)     { r.Add("GET", p, f) }
-func (r *bothRouter) HEAD(p string, f any)    { r.Add("HEAD", p, f) }
-func (r *bothRouter) POST(p string, f any)    { r.Add("POST", p, f) }
-func (r *bothRouter) PUT(p string, f any)     { r.Add("PUT", p, f) }
-func (r *bothRouter) DELETE(p string, f any)  { r.Add("DELETE", p, f) }
-func (r *bothRouter) OPTIONS(p string, f any) { r.Add("OPTIONS", p, f) }
-func (r *bothRouter) PATCH(p string, f any)   { r.Add("PATCH", p, f) }
+func (r *anyRouter) GET(p string, f any)     { r.Add("GET", p, f) }
+func (r *anyRouter) HEAD(p string, f any)    { r.Add("HEAD", p, f) }
+func (r *anyRouter) POST(p string, f any)    { r.Add("POST", p, f) }
+func (r *anyRouter) PUT(p string, f any)     { r.Add("PUT", p, f) }
+func (r *anyRouter) DELETE(p string, f any)  { r.Add("DELETE", p, f) }
+func (r *anyRouter) OPTIONS(p string, f any) { r.Add("OPTIONS", p, f) }
+func (r *anyRouter) PATCH(p string, f any)   { r.Add("PATCH", p, f) }
