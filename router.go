@@ -19,22 +19,28 @@ func (r *router) routeAdd(method string, path string, handler http.Handler) {
 	r.routes[path][method] = handler
 }
 
-func (r *router) serve(writer http.ResponseWriter, request *http.Request) {
-	var fun handlerFunc
-	a, ok := r.routes[r.getPath(request)]
+func (r *router) getHandler(request *http.Request) (handler http.Handler, pattern string) {
+	path := r.getPath(request)
+	a, ok := r.routes[path]
 	if ok != true {
-		http.NotFound(writer, request)
-		return
+		return http.NotFoundHandler(), ""
 	}
 	if _, exists := a[""]; exists == true {
 		// Catch-all.
-		fun = a[""].ServeHTTP
-	} else {
-		fun = a[request.Method].ServeHTTP
+		return a[""], path
 	}
+	if _, exists := a[request.Method]; exists == true {
+		return a[request.Method], path
+	}
+	return http.NotFoundHandler(), ""
+}
+
+func (r *router) serve(writer http.ResponseWriter, request *http.Request) {
+	h, _ := r.getHandler(request)
+	fun := h.ServeHTTP
 	// Use middlewares
-	for _, mitm := range r.middlewares {
-		fun = mitm(fun)
+	for _, middleware := range r.middlewares {
+		fun = middleware(fun)
 	}
 	fun(writer, request)
 }

@@ -19,7 +19,6 @@ func (r *basicRouter) HandleFunc(p string, f handlerFunc) {
 func (r *basicRouter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	r.serve(w, req)
 }
-func (r *basicRouter) Handler(req *http.Request) (handler http.Handler, pattern string) {
-	// TODO: Think about it.
-	return nil, ""
+func (r *basicRouter) Handler(req *http.Request) (http.Handler, string) {
+	return r.getHandler(req)
 }
