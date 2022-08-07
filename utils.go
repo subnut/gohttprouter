@@ -19,12 +19,36 @@ func unhex(c byte) byte {
 	return 0
 }
 
+// Converts a digit to an uppercase hexadecimal character
+func tohex(c byte) byte {
+	switch {
+	case 0x0 <= c && c <= 0x9:
+		return c + '0'
+	case 0xA <= c && c <= 0xF:
+		return c + 'A' - 10
+	}
+	return 0
+}
+
 // Converts an ASCII character to its uppercase form
 func toUpper(c byte) byte {
 	if 'a' <= c && c <= 'z' {
 		return c - 'a' + 'A'
 	}
 	return c
+}
+
+// Percent-encodes the characters not allowed in the path of a URL string
+func encode(str string) string {
+	for i := 0; i < len(str); i++ {
+		if strings.IndexByte(rfc3986_pchar+"/", str[i]) != -1 {
+			continue
+		}
+		hex := []byte{'%', tohex(str[i] >> 4), tohex(str[i] << 4 >> 4)}
+		str = str[:i] + string(hex) + str[i+1:]
+		i += 2
+	}
+	return str
 }
 
 // Returns the normalized version of http.Request.RequestURI
@@ -40,7 +64,7 @@ func (r *router) getPath(request *http.Request) string {
 		}
 	}
 	// Truncate empty segments
-	if !r.config.EmptySegmentsAreImportant {
+	if !r.Config.KeepEmptySegments {
 		var segments [][]byte
 		// Leading forward slash (if any)
 		if url[0] == '/' {
