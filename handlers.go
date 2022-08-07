@@ -8,23 +8,23 @@ import (
 	"strings"
 )
 
-type handlers struct {
+type responses struct {
 	codes []int
-	numHandlers
-	namedHandlers
+	numResponses
+	namedResponses
 }
-type numHandlers struct {
+type numResponses struct {
 	SC201 handlerFunc // Created
 	SC404 handlerFunc // Not Found
 	SC405 handlerFunc // Method Not Allowed
 }
-type namedHandlers struct {
+type namedResponses struct {
 	Created          handlerFunc `sc:"201"`
 	NotFound         handlerFunc `sc:"404"`
 	MethodNotAllowed handlerFunc `sc:"405"`
 }
 
-func (h *handlers) Set(sc int, handler handlerFunc) {
+func (h *responses) Set(sc int, handler handlerFunc) {
 	found := false
 	for _, code := range h.codes {
 		if sc == code {
@@ -37,7 +37,7 @@ func (h *handlers) Set(sc int, handler handlerFunc) {
 	}
 	s := reflect.ValueOf(h).Elem()
 	s.FieldByName(fmt.Sprintf("SC%d", sc)).Set(reflect.ValueOf(handler))
-	t := reflect.TypeOf(namedHandlers{})
+	t := reflect.TypeOf(namedResponses{})
 	for i := 0; i < t.NumField(); i++ {
 		if t.Field(i).Tag.Get("sc") == strconv.Itoa(sc) {
 			s.FieldByName(t.Field(i).Name).Set(reflect.ValueOf(handler))
@@ -46,20 +46,20 @@ func (h *handlers) Set(sc int, handler handlerFunc) {
 	}
 }
 
-func initHandlers() *handlers {
+func initHandlers() *responses {
 	var codes []int
-	t := reflect.TypeOf(numHandlers{})
+	t := reflect.TypeOf(numResponses{})
 	for i := 0; i < t.NumField(); i++ {
 		code, _ := strconv.Atoi(strings.TrimLeft(t.Field(i).Name, "SC"))
 		codes = append(codes, code)
 	}
-	num := numHandlers{}
-	nam := namedHandlers{}
+	num := numResponses{}
+	nam := namedResponses{}
 	num.init()
 	nam.init()
-	return &handlers{codes, num, nam}
+	return &responses{codes, num, nam}
 }
-func (h *numHandlers) init() {
+func (h *numResponses) init() {
 	t := reflect.TypeOf(*h)
 	s := reflect.ValueOf(h).Elem()
 	for i := 0; i < s.NumField(); i++ {
@@ -68,7 +68,7 @@ func (h *numHandlers) init() {
 		}(strconv.Atoi(strings.TrimLeft(t.Field(i).Name, "SC")))))
 	}
 }
-func (h *namedHandlers) init() {
+func (h *namedResponses) init() {
 	t := reflect.TypeOf(*h)
 	s := reflect.ValueOf(h).Elem()
 	for i := 0; i < s.NumField(); i++ {

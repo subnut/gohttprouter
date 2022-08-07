@@ -14,14 +14,14 @@ func New() *routers {
 	r.methods = []string{"OPTIONS"}
 	r.routes = make(map[string]map[string]http.Handler)
 	r.Config.RoutePathAutoEncode = true
-	r.Config.Handlers = initHandlers()
-	r.Config.GlobalOPTIONShandler = func(w http.ResponseWriter, req *http.Request) {
+	r.Config.Response = initHandlers()
+	r.Config.DefaultHandler.GlobalOPTIONS = func(w http.ResponseWriter, req *http.Request) {
 		w.Header().Add("Allow", strings.Join(r.methods, ", "))
 	}
-	r.Config.DefaultOPTIONShandler = func(w http.ResponseWriter, req *http.Request) {
+	r.Config.DefaultHandler.DefaultOPTIONS = func(w http.ResponseWriter, req *http.Request) {
 		a, p := r.getHandlers(req)
 		if p == "" {
-			r.Config.Handlers.NotFound(w, req)
+			r.Config.Response.NotFound(w, req)
 			return
 		}
 		var methods []string

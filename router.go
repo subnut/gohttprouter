@@ -14,7 +14,7 @@ type router struct {
 }
 type config struct {
 	Config
-	Handlers *handlers
+	Response *responses
 }
 type Config struct {
 	RoutePathAutoEncode   bool
@@ -25,8 +25,16 @@ type Config struct {
 	LinkHeaderSkip        bool
 	LinkHeaderHTTP        bool
 	RedirectToCanonical   bool // TODO
-	GlobalOPTIONShandler  handlerFunc
-	DefaultOPTIONShandler handlerFunc
+	DefaultHandler        defaultHandlers
+}
+type defaultHandlers struct {
+	DefaultHEAD    handlerFunc // TODO
+	DefaultOPTIONS handlerFunc
+	GlobalOPTIONS  handlerFunc
+	PanicHandler   func(any) handlerFunc // TODO
+	// PanicHandler shall consume the panic, and shall return a handlerFunc
+	// which (when called) shall preferably respond with an HTTP 500 response
+	// containing details of what went wrong (or a brief error message)
 }
 
 func (r *router) routeAdd(method string, path string, handler http.Handler) {
@@ -69,7 +77,7 @@ func (r *router) getHandler(request *http.Request) (handler http.Handler, patter
 			return handler, path
 		}
 	}
-	return http.HandlerFunc(r.Config.Handlers.NotFound), ""
+	return http.HandlerFunc(r.Config.Response.NotFound), ""
 }
 
 func (r *router) serve(writer http.ResponseWriter, req *http.Request) {
