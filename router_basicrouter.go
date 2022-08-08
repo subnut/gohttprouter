@@ -20,5 +20,9 @@ func (r *basicRouter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	r.serve(w, req)
 }
 func (r *basicRouter) Handler(req *http.Request) (http.Handler, string) {
-	return r.getHandler(req)
+	h, p := r.getHandler(req)
+	if p == "" {
+		h = http.HandlerFunc(r.Responses.NotFound)
+	}
+	return h, p
 }

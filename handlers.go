@@ -15,13 +15,17 @@ type responses struct {
 }
 type numResponses struct {
 	SC201 handlerFunc // Created
+	SC307 handlerFunc // Temporary Redirect
+	SC308 handlerFunc // Permanent Redirect
 	SC404 handlerFunc // Not Found
 	SC405 handlerFunc // Method Not Allowed
 }
 type namedResponses struct {
-	Created          handlerFunc `sc:"201"`
-	NotFound         handlerFunc `sc:"404"`
-	MethodNotAllowed handlerFunc `sc:"405"`
+	Created           handlerFunc `sc:"201"`
+	TemporaryRedirect handlerFunc `sc:"307"`
+	PermanentRedirect handlerFunc `sc:"308"`
+	NotFound          handlerFunc `sc:"404"`
+	MethodNotAllowed  handlerFunc `sc:"405"`
 }
 
 func (h *responses) Set(sc int, handler handlerFunc) {
@@ -46,7 +50,7 @@ func (h *responses) Set(sc int, handler handlerFunc) {
 	}
 }
 
-func initHandlers() *responses {
+func initResponses() *responses {
 	var codes []int
 	t := reflect.TypeOf(numResponses{})
 	for i := 0; i < t.NumField(); i++ {

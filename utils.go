@@ -64,7 +64,7 @@ func (r *router) getPath(request *http.Request) string {
 		}
 	}
 	// Truncate empty segments
-	if !r.Config.KeepEmptySegments {
+	if !r.config.KeepEmptySegments {
 		var segments [][]byte
 		// Leading forward slash (if any)
 		if url[0] == '/' {

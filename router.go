@@ -7,16 +7,13 @@ import (
 )
 
 type router struct {
-	Config      *config
+	config      config
 	methods     []string
 	middlewares []func(handlerFunc) handlerFunc
 	routes      map[string]map[string]http.Handler
+	Responses   *responses
 }
 type config struct {
-	Config
-	Response *responses
-}
-type Config struct {
 	RoutePathAutoEncode   bool
 	RoutePathIgnorePctEnc bool // `true` in http.ServeMux
 	CaseInsensitive       bool
@@ -24,11 +21,10 @@ type Config struct {
 	KeepTrailingSlashes   bool // TODO
 	LinkHeaderSkip        bool
 	LinkHeaderHTTP        bool
-	RedirectToCanonical   bool // TODO
-	DefaultHandler        defaultHandlers
+	RedirectToCanonical   bool
+	DefaultHandlers       defaultHandlers
 }
 type defaultHandlers struct {
-	DefaultHEAD    handlerFunc // TODO
 	DefaultOPTIONS handlerFunc
 	GlobalOPTIONS  handlerFunc
 	PanicHandler   func(any) handlerFunc // TODO
@@ -57,7 +53,7 @@ func (r *router) routeAdd(method string, path string, handler http.Handler) {
 
 func (r *router) getHandlers(request *http.Request) (map[string]http.Handler, string) {
 	path := r.getPath(request)
-	if r.Config.CaseInsensitive {
+	if r.config.CaseInsensitive {
 		path = strings.ToLower(path)
 	}
 	a, ok := r.routes[path]
@@ -77,21 +73,52 @@ func (r *router) getHandler(request *http.Request) (handler http.Handler, patter
 			return handler, path
 		}
 	}
-	return http.HandlerFunc(r.Config.Response.NotFound), ""
+	return nil, ""
 }
 
 func (r *router) serve(writer http.ResponseWriter, req *http.Request) {
 	if req.Method == "OPTIONS" && req.RequestURI == "*" {
+		r.config.DefaultHandlers.GlobalOPTIONS(writer, req)
 		return
 	}
 	h, path := r.getHandler(req)
+	if path == "" {
+		switch req.Method {
+		case "OPTIONS":
+			r.config.DefaultHandlers.DefaultOPTIONS(writer, req)
+			return
+		case "HEAD":
+			rq := http.Request(*req)
+			rq.Method = "GET"
+			h, path = r.getHandler(&rq)
+			if path != "" {
+				break
+			}
+			fallthrough
+		default:
+			r.Responses.NotFound(writer, req)
+			return
+		}
+	}
+	requestPath := req.RequestURI
+	if i := strings.IndexByte(requestPath, '?'); i != -1 {
+		requestPath = requestPath[:i]
+	}
+	if i := strings.IndexByte(requestPath, '#'); i != -1 {
+		requestPath = requestPath[:i]
+	}
+	if path != requestPath && r.config.RedirectToCanonical {
+		r.Responses.PermanentRedirect(writer, req)
+		writer.Header().Add("Location", path)
+		return
+	}
 	fun := h.ServeHTTP
 	for _, middleware := range r.middlewares {
 		fun = middleware(fun)
 	}
-	if !r.Config.LinkHeaderSkip && path != "" {
+	if !r.config.LinkHeaderSkip && path != "" {
 		scheme := "https"
-		if r.Config.LinkHeaderHTTP {
+		if r.config.LinkHeaderHTTP {
 			scheme = "http"
 		}
 		writer.Header().Add("Link", fmt.Sprintf(`<%s://%s%s>; rel="canonical"`, scheme, req.Host, path))
@@ -101,7 +128,7 @@ func (r *router) serve(writer http.ResponseWriter, req *http.Request) {
 
 // Validates the `path` argument string in router.routeAdd()
 func (r *router) normalizeRoutePath(path string) string {
-	if !r.Config.RoutePathIgnorePctEnc {
+	if !r.config.RoutePathIgnorePctEnc {
 		// Validate percent-encoded characters in `path`
 		hex := "0123456789" + "ABCDEF" + "abcdef"
 		var invalidPctEncodings []string
@@ -140,14 +167,14 @@ func (r *router) normalizeRoutePath(path string) string {
 		return r
 	}, path)
 	if len(invalidChars) != 0 {
-		if !r.Config.RoutePathAutoEncode {
+		if !r.config.RoutePathAutoEncode {
 			errmsg := fmt.Sprintf("path contains invalid characters %q", invalidChars)
 			errmsg += fmt.Sprintf("\npath = %q", path)
 			panic(errmsg)
 		}
 		path = encode(path)
 	}
-	if r.Config.CaseInsensitive {
+	if r.config.CaseInsensitive {
 		path = strings.ToLower(path)
 	}
 	return path
