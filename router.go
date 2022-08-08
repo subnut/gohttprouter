@@ -7,7 +7,7 @@ import (
 )
 
 type router struct {
-	Config      config
+	Config      *config
 	methods     []string
 	middlewares []func(handlerFunc) handlerFunc
 	routes      map[string]map[string]http.Handler

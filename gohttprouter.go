@@ -13,6 +13,7 @@ func New() *routers {
 	r := new(router)
 	r.methods = []string{"OPTIONS"}
 	r.routes = make(map[string]map[string]http.Handler)
+	r.Config = new(config)
 	r.Config.RoutePathAutoEncode = true
 	r.Config.Response = initHandlers()
 	r.Config.DefaultHandler.GlobalOPTIONS = func(w http.ResponseWriter, req *http.Request) {
