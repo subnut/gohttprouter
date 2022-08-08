@@ -14,13 +14,13 @@ type router struct {
 	Responses   *responses
 }
 type config struct {
+	HTTPS                 bool
 	RoutePathAutoEncode   bool
 	RoutePathIgnorePctEnc bool // `true` in http.ServeMux
 	CaseInsensitive       bool
 	KeepEmptySegments     bool
 	KeepTrailingSlashes   bool // TODO
 	LinkHeaderSkip        bool
-	LinkHeaderHTTP        bool
 	RedirectToCanonical   bool
 	DefaultHandlers       defaultHandlers
 }
@@ -108,8 +108,12 @@ func (r *router) serve(writer http.ResponseWriter, req *http.Request) {
 		requestPath = requestPath[:i]
 	}
 	if path != requestPath && r.config.RedirectToCanonical {
+		scheme := "http"
+		if r.config.HTTPS {
+			scheme = "https"
+		}
+		writer.Header().Add("Location", fmt.Sprintf("%s://%s%s", scheme, req.Host, path))
 		r.Responses.PermanentRedirect(writer, req)
-		writer.Header().Add("Location", path)
 		return
 	}
 	fun := h.ServeHTTP
@@ -117,9 +121,9 @@ func (r *router) serve(writer http.ResponseWriter, req *http.Request) {
 		fun = middleware(fun)
 	}
 	if !r.config.LinkHeaderSkip && path != "" {
-		scheme := "https"
-		if r.config.LinkHeaderHTTP {
-			scheme = "http"
+		scheme := "http"
+		if r.config.HTTPS {
+			scheme = "https"
 		}
 		writer.Header().Add("Link", fmt.Sprintf(`<%s://%s%s>; rel="canonical"`, scheme, req.Host, path))
 	}
