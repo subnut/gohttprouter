@@ -41,8 +41,8 @@ func New() *routers {
 	return &routers{r}
 }
 
-func (r *routers) WithConfig (cfg config) *routers {
-	router := *r.router
+func NewWithConfig (cfg config) *routers {
+	router := *New().router
 	router.config = cfg
 	return &routers{&router}
 }
